@@ -9,14 +9,14 @@
 //! --------
 //! ```rust
 //! extern crate deunicode;
-//! use deunicode::deunicode;
+//! use deunicode::from_str_lossy;
 //!
-//! assert_eq!(deunicode("Æneid"), "AEneid");
-//! assert_eq!(deunicode("étude"), "etude");
-//! assert_eq!(deunicode("北亰"), "Bei Jing");
-//! assert_eq!(deunicode("ᔕᓇᓇ"), "shanana");
-//! assert_eq!(deunicode("げんまい茶"), "genmaiCha");
-//! assert_eq!(deunicode("🦄☣"), "unicorn face biohazard");
+//! assert_eq!(from_str_lossy("Æneid"), "AEneid");
+//! assert_eq!(from_str_lossy("étude"), "etude");
+//! assert_eq!(from_str_lossy("北亰"), "Bei Jing");
+//! assert_eq!(from_str_lossy("ᔕᓇᓇ"), "shanana");
+//! assert_eq!(from_str_lossy("げんまい茶"), "genmaiCha");
+//! assert_eq!(from_str_lossy("🦄☣"), "unicorn face biohazard");
 //! ```
 
 const MAPPING: &str = include_str!("mapping.txt");
@@ -38,7 +38,7 @@ const POINTERS: &[u8] = include_bytes!("pointers.bin");
 ///
 /// Guarantees and Warnings
 /// -----------------------
-/// Here are some guarantees you have when calling `deunicode()`:
+/// Here are some guarantees you have when calling `from_str_lossy()`:
 ///   * The `String` returned will be valid ASCII; the decimal representation of
 ///     every `char` in the string will be between 0 and 127, inclusive.
 ///   * Every ASCII character (0x0000 - 0x007F) is mapped to itself.
@@ -51,24 +51,42 @@ const POINTERS: &[u8] = include_bytes!("pointers.bin");
 /// There are, however, some things you should keep in mind:
 ///   * As stated, some transliterations do produce `\n` characters.
 ///   * Some Unicode characters transliterate to an empty string, either on purpose
-///     or because `deunicode` does not know about the character.
+///     or because `from_str_lossy` does not know about the character.
 ///   * Some Unicode characters are unknown and transliterate to `"[?]"`.
 ///   * Many Unicode characters transliterate to multi-character strings. For
 ///     example, 北 is transliterated as "Bei ".
 ///   * Han characters are mapped to Mandarin, and will be mostly illegible to Japanese readers.
 #[inline]
-pub fn deunicode(s: &str) -> String {
-    deunicode_with_tofu(s, "[?]")
+pub fn from_str_lossy(s: &str) -> String {
+    from_str_with_tofu(s, "[?]")
 }
 
-/// Same as `deunicode`, but unknown characters can be replaced with a custom string.
+/// Same as `from_str_lossy`, but returns `None` if unknown characters are detected.
+pub fn from_str(s: &str) -> Option<String> {
+    let mut out = String::with_capacity(s.len());
+    let mut had_space = false;
+    for ch in s.chars().map(|ch| from_char(ch)) {
+        let ch = ch?;
+        // don't add space after transliteration with a space
+        if !had_space || " " != ch {
+            out.push_str(ch);
+        }
+        had_space = ch.len() > 1 && ch.as_bytes()[ch.len()-1] == b' ';
+    }
+    if had_space { // transliteration uses spaces to avoid words joining together
+        out.pop();
+    }
+    Some(out)
+}
+
+/// Same as `from_str_lossy`, but unknown characters can be replaced with a custom string.
 ///
 /// "Tofu" is a nickname for a replacement character, which in Unicode fonts usually
 /// looks like a block of tofu.
-pub fn deunicode_with_tofu(s: &str, custom_placeholder: &str) -> String {
+pub fn from_str_with_tofu(s: &str, custom_placeholder: &str) -> String {
     let mut out = String::with_capacity(s.len());
     let mut had_space = false;
-    for ch in s.chars().map(|ch| deunicode_char(ch).unwrap_or(custom_placeholder)) {
+    for ch in s.chars().map(|ch| from_char(ch).unwrap_or(custom_placeholder)) {
         // don't add space after transliteration with a space
         if !had_space || " " != ch {
             out.push_str(ch);
@@ -84,18 +102,18 @@ pub fn deunicode_with_tofu(s: &str, custom_placeholder: &str) -> String {
 /// This function takes a single Unicode character and returns an ASCII
 /// transliteration.
 ///
-/// The warnings and guarantees of `deunicode()` apply to this function as well.
+/// The warnings and guarantees of `from_str_lossy()` apply to this function as well.
 ///
 /// Examples
 /// --------
 /// ```rust
 /// # extern crate deunicode;
-/// # use deunicode::deunicode_char;
-/// assert_eq!(deunicode_char('Æ'), Some("AE"));
-/// assert_eq!(deunicode_char('北'), Some("Bei "));
+/// # use deunicode::from_char;
+/// assert_eq!(from_char('Æ'), Some("AE"));
+/// assert_eq!(from_char('北'), Some("Bei "));
 /// ```
 #[inline]
-pub fn deunicode_char(ch: char) -> Option<&'static str> {
+pub fn from_char(ch: char) -> Option<&'static str> {
     // when using the global directly, LLVM fails to remove bounds checks
     let pointers: &'static [Ptr] = unsafe {
         std::slice::from_raw_parts(POINTERS.as_ptr() as *const Ptr, POINTERS.len()/3)
