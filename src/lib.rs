@@ -19,8 +19,8 @@
 //! assert_eq!(deunicode("🦄☣"), "unicorn biohazard");
 //! ```
 
-use std::str::Chars;
 use std::iter::FusedIterator;
+use std::str::Chars;
 
 const MAPPING: &str = include_str!("mapping.txt");
 
@@ -118,7 +118,7 @@ pub trait AsciiChars {
     ///
     /// Items of this iterator may be `None` for some characters.
     /// Use `.map(|ch| ch.unwrap_or("?"))` to replace invalid characters.
-    fn ascii_chars(&self) -> AsciiCharsIter;
+    fn ascii_chars(&self) -> AsciiCharsIter<'_>;
     /// Convert any Unicode string to ASCII-only string.
     ///
     /// Characters are converted to closest ASCII equivalent.
@@ -127,7 +127,7 @@ pub trait AsciiChars {
 }
 
 impl AsciiChars for String {
-    fn ascii_chars(&self) -> AsciiCharsIter {
+    fn ascii_chars(&self) -> AsciiCharsIter<'_> {
         AsciiCharsIter::new(self)
     }
     fn to_ascii_lossy(&self) -> String {
@@ -136,7 +136,7 @@ impl AsciiChars for String {
 }
 
 impl AsciiChars for str {
-    fn ascii_chars(&self) -> AsciiCharsIter {
+    fn ascii_chars(&self) -> AsciiCharsIter<'_> {
         AsciiCharsIter::new(self)
     }
     fn to_ascii_lossy(&self) -> String {

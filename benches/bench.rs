@@ -1,9 +1,8 @@
 #![feature(test)]
 
-extern crate deunicode;
 extern crate test;
-use test::Bencher;
 use deunicode::*;
+use test::Bencher;
 
 #[bench]
 fn bench_iter(b: &mut Bencher) {

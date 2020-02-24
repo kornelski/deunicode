@@ -1,4 +1,3 @@
-extern crate deunicode;
 use deunicode::*;
 
 #[test]

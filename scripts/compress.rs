@@ -1,11 +1,10 @@
 //! Takes data.rs and makes pointers.bin & mapping.txt data files
 
-extern crate serde;
-extern crate serde_json;
+
 #[macro_use] extern crate serde_derive;
 
 mod data;
-use data::MAPPING;
+use crate::data::MAPPING;
 use std::collections::HashMap;
 
 const UNKNOWN_CHAR: &'static str = "\0\0\0";
