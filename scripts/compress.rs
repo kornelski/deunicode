@@ -164,9 +164,10 @@ fn main() {
                 assert!(c2 < 128);
                 c1 | (c2 << 8)
             },
-            _ => {
-                let l = *longer.get(replacement).expect("known prefix");
-                *index.get(l).expect("in index")
+            len => {
+                let off = mapping.find(replacement).expect("in index");
+                assert_eq!(&mapping[off..off+len], replacement);
+                off
             },
         };
         pointers.push((pos & 0xFF) as u8);

@@ -17,6 +17,7 @@
 //! assert_eq!(deunicode("ᔕᓇᓇ"), "shanana");
 //! assert_eq!(deunicode("げんまい茶"), "genmaiCha");
 //! assert_eq!(deunicode("🦄☣"), "unicorn biohazard");
+//! assert_eq!(deunicode("…"), "...");
 //! ```
 
 use std::iter::FusedIterator;

@@ -37,7 +37,7 @@ fn test_conversion() {
     assert_eq!(deunicode("北 亰 — city"), "Bei Jing -- city");
     assert_eq!(deunicode("北亰 city "), "Bei Jing city ");
     assert_eq!(deunicode("ᔕᓇᓇ"), "shanana");
-    assert_eq!(deunicode("ᏔᎵᏆ"), "taliaqu");
+    assert_eq!(deunicode("ᏔᎵᏆ"), "taliqua");
     assert_eq!(deunicode("ܦܛܽܐܺ"), "ptu'i");
     assert_eq!(deunicode("अभिजीत"), "abhijiit");
     assert_eq!(deunicode("অভিজীত"), "abhijiit");
