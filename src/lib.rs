@@ -93,15 +93,17 @@ pub fn deunicode_with_tofu(s: &str, custom_placeholder: &str) -> String {
 pub fn deunicode_char(ch: char) -> Option<&'static str> {
     // when using the global directly, LLVM fails to remove bounds checks
     let pointers: &'static [Ptr] = unsafe {
-        std::slice::from_raw_parts(POINTERS.as_ptr() as *const Ptr, POINTERS.len()/3)
+        std::slice::from_raw_parts(POINTERS.as_ptr().cast::<Ptr>(), POINTERS.len()/std::mem::size_of::<Ptr>())
     };
 
     if let Some(p) = pointers.get(ch as usize) {
         // if length is 1 or 2, then the "pointer" data is used to store the char
         if p.len <= 2 {
+            let chars = &p.chr[..p.len as usize];
             // safe, because we're returning only ASCII
+            debug_assert!(std::str::from_utf8(chars).is_ok());
             unsafe {
-                Some(std::str::from_utf8_unchecked(&p.chr[..p.len as usize]))
+                Some(std::str::from_utf8_unchecked(chars))
             }
         } else {
             let map_pos = (p.chr[0] as u16 | (p.chr[1] as u16) << 8) as usize;
