@@ -2,26 +2,25 @@ use deunicode::*;
 
 #[test]
 /// Tests that every character outputted by the deunicode_char() function is valid ASCII.
-fn test_every_char_is_ascii() {
-    use std::char;
+fn test_every_char_is_ascii1() {
+    for c in (0 ..= 0x1FFFF)
+        .filter_map(std::char::from_u32)
+        .filter_map(deunicode_char) {
+        assert!(c.chars().all(|ascii_ch| {
+            ascii_ch as u32 <= 127
+        }));
+    }
+}
 
-    for i in 0 ..= 0x10FFFF {
-        match char::from_u32(i) {
-            Some(ch) => {
-                if let Some(c) = deunicode_char(ch) {
-                    for ascii_ch in c.chars() {
-                        let x = ascii_ch as u32;
-                        if x > 127 {
-                            panic!(
-                                "Data contains non-ASCII character (Dec: {})",
-                                x
-                            );
-                        }
-                    }
-                }
-            },
-            _ => {}
-        }
+#[test]
+/// Tests that every character outputted by the deunicode_char() function is valid ASCII.
+fn test_every_char_is_ascii2() {
+    for c in (0x1FFFF ..= 0x10FFFF)
+        .filter_map(std::char::from_u32)
+        .filter_map(deunicode_char) {
+        assert!(c.chars().all(|ascii_ch| {
+            ascii_ch as u32 <= 127 && ascii_ch as u8 >= b'\t'
+        }));
     }
 }
 
@@ -59,4 +58,15 @@ fn test_deunicode_char() {
     assert_eq!(deunicode_char('亰'), Some("Jing "));
     assert_eq!(deunicode_char('ᔕ'), Some("sha"));
     assert_eq!(deunicode_char(std::char::from_u32(849).unwrap()), None);
+
+    assert_eq!(deunicode_char(std::char::from_u32(0x1FFFF).unwrap()), None);
+    assert_eq!(deunicode_char(std::char::from_u32(0x2FFFF).unwrap()), None);
+    assert_eq!(deunicode_char(std::char::from_u32(0x3FFFF).unwrap()), None);
+    assert_eq!(deunicode_char(std::char::from_u32(0x4FFFF).unwrap()), None);
+    assert_eq!(deunicode_char(std::char::from_u32(0x5FFFF).unwrap()), None);
+    assert_eq!(deunicode_char(std::char::from_u32(0x6FFFF).unwrap()), None);
+    assert_eq!(deunicode_char(std::char::from_u32(0x7FFFF).unwrap()), None);
+    assert_eq!(deunicode_char(std::char::from_u32(0x8FFFF).unwrap()), None);
+    assert_eq!(deunicode_char(std::char::from_u32(0x9FFFF).unwrap()), None);
+    assert_eq!(deunicode_char(std::char::from_u32(0x10FFFF).unwrap()), None);
 }
