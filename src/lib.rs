@@ -20,6 +20,7 @@
 //! assert_eq!(deunicode("…"), "...");
 //! ```
 
+use std::borrow::Cow;
 use std::iter::FusedIterator;
 use std::str::Chars;
 
@@ -56,24 +57,54 @@ const POINTERS: &[u8] = include_bytes!("pointers.bin");
 ///   * As stated, some transliterations do produce `\n` characters.
 ///   * Some Unicode characters transliterate to an empty string, either on purpose
 ///     or because `deunicode` does not know about the character.
-///   * Some Unicode characters are unknown and transliterate to `"[?]"`.
+///   * Some Unicode characters are unknown and transliterate to `"[?]"` (see `deunicode_with_tofu`)
 ///   * Many Unicode characters transliterate to multi-character strings. For
 ///     example, 北 is transliterated as "Bei ".
 ///   * Han characters are mapped to Mandarin, and will be mostly illegible to Japanese readers.
-#[inline]
+#[inline(always)]
 pub fn deunicode(s: &str) -> String {
     deunicode_with_tofu(s, "[?]")
 }
 
 /// Same as `deunicode`, but unknown characters can be replaced with a custom string.
 ///
+/// You can use "\u{FFFD}" to use the usual Unicode Replacement Character.
+///
 /// "Tofu" is a nickname for a replacement character, which in Unicode fonts usually
 /// looks like a block of tofu.
+#[inline]
 pub fn deunicode_with_tofu(s: &str, custom_placeholder: &str) -> String {
+    deunicode_with_tofu_cow(s, custom_placeholder).into_owned()
+}
+
+/// Same as `deunicode_with_tofu`, but avoids allocating a new `String` if not necessary.
+///
+/// You can use "\u{FFFD}" to use the usual Unicode Replacement Character.
+///
+/// "Tofu" is a nickname for a replacement character, which in Unicode fonts usually
+/// looks like a block of tofu.
+pub fn deunicode_with_tofu_cow<'input>(s: &'input str, custom_placeholder: &str) -> Cow<'input, str> {
+    // Fast path to skip over ASCII chars at the beginning of the string
+    let ascii_len = s.as_bytes().iter().take_while(|&&c| c < 0x7F).count();
+    if ascii_len >= s.len() { // >= elides bounds check in split_at
+        return Cow::Borrowed(s);
+    }
+
     // reserve a bit more space to avoid reallocations on longer transliterations
-    let mut out = String::with_capacity(s.len() + 16);
+    // but instead of `+ 16` uses `| 15` to stay in the smallest allocation bucket for short strings
+    let mut out = String::with_capacity(s.len() | 15);
+
+    let (ascii, rest) = s.as_bytes().split_at(ascii_len);
+
+    // safe, because it's been checked to be ASCII only
+    out.push_str(unsafe { std::str::from_utf8_unchecked(ascii) });
+
+    // safe, because UTF-8 codepoint can't start with < 7F byte
+    debug_assert!(std::str::from_utf8(rest).is_ok());
+    let s = unsafe { std::str::from_utf8_unchecked(rest) };
+
     out.extend(s.ascii_chars().map(|ch| ch.unwrap_or(custom_placeholder)));
-    out
+    Cow::Owned(out)
 }
 
 /// This function takes a single Unicode character and returns an ASCII
@@ -130,18 +161,22 @@ pub trait AsciiChars {
 }
 
 impl AsciiChars for String {
+    #[inline(always)]
     fn ascii_chars(&self) -> AsciiCharsIter<'_> {
         AsciiCharsIter::new(self)
     }
+    #[inline(always)]
     fn to_ascii_lossy(&self) -> String {
         deunicode(self)
     }
 }
 
 impl AsciiChars for str {
+    #[inline(always)]
     fn ascii_chars(&self) -> AsciiCharsIter<'_> {
         AsciiCharsIter::new(self)
     }
+    #[inline(always)]
     fn to_ascii_lossy(&self) -> String {
         deunicode(self)
     }
