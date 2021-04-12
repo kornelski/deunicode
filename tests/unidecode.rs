@@ -52,6 +52,13 @@ fn test_conversion() {
 }
 
 #[test]
+fn test_issue_7() {
+    assert_eq!(deunicode("技术").to_lowercase(), "ji shu");
+    assert_eq!(deunicode("评价").to_lowercase(), "ping jia");
+    assert_eq!(deunicode("旅游").to_lowercase(), "lv you");
+}
+
+#[test]
 fn test_deunicode_char() {
     assert_eq!(deunicode_char('Æ'), Some("AE"));
     assert_eq!(deunicode_char('北'), Some("Bei "));

@@ -80,6 +80,11 @@ fn main() {
     let mut all_codepoints: Vec<_> = MAPPING.iter().map(|&ch| {
         if ch != "[?] " && ch != "[?]" {ch} else {UNKNOWN_CHAR} // old data marks unknown as "[?]"
     }).collect();
+
+    all_codepoints['术' as usize] = "Shu ";
+    all_codepoints['价' as usize] = "Jia ";
+    all_codepoints['旅' as usize] = "Lv ";
+
     for &(ch, ref name) in gemoji.iter().chain(emoji1.iter()).chain(emoji2.iter()) {
         while all_codepoints.len() <= ch {
             all_codepoints.push("");
