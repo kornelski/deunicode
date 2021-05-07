@@ -77,31 +77,9 @@ fn main() {
         .collect::<Vec<_>>();
 
     // merge shortest names
-    let mut all_codepoints: Vec<_> = MAPPING.iter().copied().enumerate().map(|(i, ch)| {
+    let mut all_codepoints: Vec<_> = MAPPING.iter().copied().map(|ch| {
         // old data marks unknown as "[?]"
-        let ch = if ch != "[?] " && ch != "[?]" {ch} else {
-            let any = std::char::from_u32(i as u32)
-                .map(any_ascii::any_ascii_char)
-                .unwrap_or("")
-                .trim_matches(':');
-            if any != "" {
-                // we use spaces instead of underscores in emoji
-                if any.chars().any(|c| c.is_alphabetic()) && any.chars().any(|c| c == '_') {
-                    let ch: String = any.chars().map(|c| if c == '_' {' '} else {c}).collect();
-                    Box::leak(ch.into_boxed_str())
-                } else {
-                    any
-                }
-            } else {
-                UNKNOWN_CHAR
-            }
-        };
-        // clean up [d123]
-        if !ch.starts_with("[d") {
-            ch
-        } else {
-            ch.trim_start_matches('[').trim_end_matches(']')
-        }
+        if ch != "[?] " && ch != "[?]" {ch} else {UNKNOWN_CHAR}
     }).collect();
 
     all_codepoints['术' as usize] = "Shu ";
@@ -110,12 +88,38 @@ fn main() {
 
     for &(ch, ref name) in gemoji.iter().chain(emoji1.iter()).chain(emoji2.iter()) {
         while all_codepoints.len() <= ch {
-            all_codepoints.push("");
+            all_codepoints.push(UNKNOWN_CHAR);
         }
         if "" == all_codepoints[ch] || "[?]" == all_codepoints[ch] || UNKNOWN_CHAR == all_codepoints[ch] || name.len() < all_codepoints[ch].len() {
             all_codepoints[ch] = name;
         }
     }
+
+    for (i, ch) in all_codepoints.iter_mut().enumerate().skip(255) {
+        if *ch == UNKNOWN_CHAR {
+            let any = std::char::from_u32(i as u32)
+                    .map(any_ascii::any_ascii_char)
+                    .unwrap_or("")
+                    .trim_matches(':');
+            if any != "" {
+                // we use spaces instead of underscores in emoji
+                *ch = if any.chars().any(|c| c.is_alphabetic()) && any.chars().any(|c| c == '_') {
+                    let ch: String = any.chars().map(|c| if c == '_' {' '} else {c}).collect();
+                    Box::leak(ch.into_boxed_str())
+                } else {
+                    any
+                };
+            }
+        } else  if ch.starts_with("[d") {
+            // clean up [d123]
+            *ch = ch.trim_start_matches('[').trim_end_matches(']');
+        };
+    }
+
+    println!("Got {} codepoints to {} chars",
+        all_codepoints.iter().filter(|&&c| c != "" && c != UNKNOWN_CHAR).count(),
+        all_codepoints.iter().filter(|&&c| c != "" && c != UNKNOWN_CHAR).map(|s| s.len()).sum::<usize>(),
+    );
 
     // find most popular replacements
     let mut popularity = HashMap::<&str, (isize, usize)>::new();
@@ -200,7 +204,7 @@ fn main() {
         };
         pointers.push((pos & 0xFF) as u8);
         pointers.push((pos >> 8) as u8);
-        pointers.push(replacement.len() as u8);
+        pointers.push(if pos == 0xFFFF {0xFF} else {replacement.len() as u8});
     }
 
     let mut f = File::create("../src/pointers.bin").unwrap();
