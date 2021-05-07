@@ -77,8 +77,31 @@ fn main() {
         .collect::<Vec<_>>();
 
     // merge shortest names
-    let mut all_codepoints: Vec<_> = MAPPING.iter().map(|&ch| {
-        if ch != "[?] " && ch != "[?]" {ch} else {UNKNOWN_CHAR} // old data marks unknown as "[?]"
+    let mut all_codepoints: Vec<_> = MAPPING.iter().copied().enumerate().map(|(i, ch)| {
+        // old data marks unknown as "[?]"
+        let ch = if ch != "[?] " && ch != "[?]" {ch} else {
+            let any = std::char::from_u32(i as u32)
+                .map(any_ascii::any_ascii_char)
+                .unwrap_or("")
+                .trim_matches(':');
+            if any != "" {
+                // we use spaces instead of underscores in emoji
+                if any.chars().any(|c| c.is_alphabetic()) && any.chars().any(|c| c == '_') {
+                    let ch: String = any.chars().map(|c| if c == '_' {' '} else {c}).collect();
+                    Box::leak(ch.into_boxed_str())
+                } else {
+                    any
+                }
+            } else {
+                UNKNOWN_CHAR
+            }
+        };
+        // clean up [d123]
+        if !ch.starts_with("[d") {
+            ch
+        } else {
+            ch.trim_start_matches('[').trim_end_matches(']')
+        }
     }).collect();
 
     all_codepoints['术' as usize] = "Shu ";
@@ -107,7 +130,7 @@ fn main() {
     // then by longest first, so that we can reuse common prefixes
     // then roughly group by similarity (original order + alpha)
     let mut by_pop = popularity.iter()
-        .map(|(&rep,&(pop, n))| (pop/4,-(rep.len() as isize),n/4,rep))
+        .map(|(&rep,&(pop, n))| (pop/4,-(rep.len() as isize),rep.chars().any(|c| c == ' '),n/4, rep))
         .collect::<Vec<_>>();
     by_pop.sort();
 
