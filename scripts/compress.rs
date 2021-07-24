@@ -126,7 +126,7 @@ fn main() {
     for (n, replacement) in all_codepoints.iter()
         .filter(|&&r| r.len()>2 && r != UNKNOWN_CHAR) // 0..=2 len gets special treatment
         .enumerate() {
-        popularity.entry(replacement).or_insert((0,n)).0 -= 1;
+        popularity.entry(replacement).or_insert((1,n)).0 -= 1;
     }
     // and sort them by most popular first
     // most popular first mean small numbers will be most frequently used
@@ -134,7 +134,7 @@ fn main() {
     // then by longest first, so that we can reuse common prefixes
     // then roughly group by similarity (original order + alpha)
     let mut by_pop = popularity.iter()
-        .map(|(&rep,&(pop, n))| (pop/4,-(rep.len() as isize),rep.chars().any(|c| c == ' '),n/4, rep))
+        .map(|(&rep,&(pop, n))| (pop == 0, !rep.chars().filter(|&c| c == ' ').count(),pop/4,rep.chars().any(|c| c.is_ascii_uppercase()),!rep.len(),n/4, rep))
         .collect::<Vec<_>>();
     by_pop.sort();
 
@@ -157,9 +157,9 @@ fn main() {
     }
 
     // store each longest replacement, saving its position
-    let mut mapping = String::new();
+    let mut mapping = String::with_capacity(60_000);
     let mut index = HashMap::<&str, usize>::new();
-    for (..,replacement) in by_pop {
+    'words: for (..,replacement) in by_pop {
         let replacement = *longer.get(replacement).expect("known prefix");
         if index.get(replacement).is_none() {
             // there's a chance two adjacent replacements form a third
@@ -167,6 +167,13 @@ fn main() {
             if let Some(pos) = mapping.find(replacement) {
                 index.insert(replacement, pos);
             } else {
+                for n in (1..replacement.len().min(mapping.len())).rev() {
+                    if replacement.starts_with(&mapping[mapping.len() - n..]) {
+                        mapping.push_str(&replacement[n..]);
+                        index.insert(replacement, mapping.len() - n);
+                        continue 'words;
+                    }
+                }
                 index.insert(replacement, mapping.len());
                 mapping.push_str(replacement);
             }
@@ -175,7 +182,7 @@ fn main() {
 
     // Now write pointers to the mapping string
     // each is position (2 bytes) + length (1 byte)
-    let mut pointers = Vec::new();
+    let mut pointers = Vec::with_capacity(all_codepoints.len());
     assert!(mapping.len() < u32::max_value() as usize);
     for &replacement in all_codepoints.iter() {
         let pos = match replacement.len() {
