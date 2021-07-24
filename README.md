@@ -33,14 +33,15 @@ Here are some guarantees you have when calling `deunicode()`:
     (`\n` or characters in the range 0x20 - 0x7E).
 
 There are, however, some things you should keep in mind:
-  * As stated, some transliterations do produce `\n` characters.
+  * Some transliterations do produce `\n` characters.
   * Some Unicode characters transliterate to an empty string, either on purpose
     or because `deunicode` does not know about the character.
   * Some Unicode characters are unknown and transliterate to `"[?]"`
     (or a custom placeholder, or `None` if you use a chars iterator).
   * Many Unicode characters transliterate to multi-character strings. For
     example, "北" is transliterated as "Bei".
-  * Han characters used in multiple languages are mapped to Mandarin,
+  * Transliteration is context-free and not sophisticated enough to produce proper Chinese or Japanese.
+    Han characters used in multiple languages are mapped to a single Mandarin pronounciation,
     and will be mostly illegible to Japanese readers. Transliteration can't
     handle cases where a single character has multiple possible pronounciations.
 

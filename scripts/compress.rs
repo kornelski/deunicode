@@ -85,6 +85,8 @@ fn main() {
     all_codepoints['术' as usize] = "Shu ";
     all_codepoints['价' as usize] = "Jia ";
     all_codepoints['旅' as usize] = "Lv ";
+    all_codepoints['什' as usize] = "Shen ";
+    all_codepoints['么' as usize] = "Me ";
 
     for &(ch, ref name) in gemoji.iter().chain(emoji1.iter()).chain(emoji2.iter()) {
         while all_codepoints.len() <= ch {
