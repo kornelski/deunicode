@@ -20,9 +20,14 @@
 //! assert_eq!(deunicode("…"), "...");
 //! ```
 
-use std::borrow::Cow;
-use std::iter::FusedIterator;
-use std::str::Chars;
+#![no_std]
+
+extern crate alloc;
+use alloc::borrow::Cow;
+use alloc::string::String;
+
+use core::iter::FusedIterator;
+use core::str::Chars;
 
 const MAPPING: &str = include_str!("mapping.txt");
 
@@ -97,11 +102,11 @@ pub fn deunicode_with_tofu_cow<'input>(s: &'input str, custom_placeholder: &str)
     let (ascii, rest) = s.as_bytes().split_at(ascii_len);
 
     // safe, because it's been checked to be ASCII only
-    out.push_str(unsafe { std::str::from_utf8_unchecked(ascii) });
+    out.push_str(unsafe { core::str::from_utf8_unchecked(ascii) });
 
     // safe, because UTF-8 codepoint can't start with < 7F byte
-    debug_assert!(std::str::from_utf8(rest).is_ok());
-    let s = unsafe { std::str::from_utf8_unchecked(rest) };
+    debug_assert!(core::str::from_utf8(rest).is_ok());
+    let s = unsafe { core::str::from_utf8_unchecked(rest) };
 
     out.extend(s.ascii_chars().map(|ch| ch.unwrap_or(custom_placeholder)));
     Cow::Owned(out)
@@ -124,7 +129,7 @@ pub fn deunicode_with_tofu_cow<'input>(s: &'input str, custom_placeholder: &str)
 pub fn deunicode_char(ch: char) -> Option<&'static str> {
     // when using the global directly, LLVM fails to remove bounds checks
     let pointers: &'static [Ptr] = unsafe {
-        std::slice::from_raw_parts(POINTERS.as_ptr().cast::<Ptr>(), POINTERS.len()/std::mem::size_of::<Ptr>())
+        core::slice::from_raw_parts(POINTERS.as_ptr().cast::<Ptr>(), POINTERS.len()/core::mem::size_of::<Ptr>())
     };
 
     if let Some(p) = pointers.get(ch as usize) {
@@ -132,9 +137,9 @@ pub fn deunicode_char(ch: char) -> Option<&'static str> {
         if p.len <= 2 {
             let chars = &p.chr[..p.len as usize];
             // safe, because we're returning only ASCII
-            debug_assert!(std::str::from_utf8(chars).is_ok());
+            debug_assert!(core::str::from_utf8(chars).is_ok());
             unsafe {
-                Some(std::str::from_utf8_unchecked(chars))
+                Some(core::str::from_utf8_unchecked(chars))
             }
         } else {
             let map_pos = (p.chr[0] as u16 | (p.chr[1] as u16) << 8) as usize;
@@ -241,6 +246,7 @@ impl<'a> Iterator for AsciiCharsIter<'a> {
 
 #[test]
 fn iter_test() {
+    use alloc::vec::Vec;
     let chars: Vec<_> = AsciiCharsIter::new("中国").filter_map(|ch| ch).collect();
     assert_eq!(&chars, &["Zhong ", "Guo"]);
     let chars: Vec<_> = "中国x".ascii_chars().filter_map(|ch| ch).collect();
