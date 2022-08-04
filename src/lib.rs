@@ -60,8 +60,7 @@ const POINTERS: &[u8] = include_bytes!("pointers.bin");
 ///
 /// There are, however, some things you should keep in mind:
 ///   * As stated, some transliterations do produce `\n` characters.
-///   * Some Unicode characters transliterate to an empty string, either on purpose
-///     or because `deunicode` does not know about the character.
+///   * Some Unicode characters transliterate to an empty string on purpose.
 ///   * Some Unicode characters are unknown and transliterate to `"[?]"` (see `deunicode_with_tofu`)
 ///   * Many Unicode characters transliterate to multi-character strings. For
 ///     example, 北 is transliterated as "Bei ".
