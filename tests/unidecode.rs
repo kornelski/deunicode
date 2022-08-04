@@ -27,6 +27,7 @@ fn test_every_char_is_ascii2() {
 // These tests were ported directly from the original `Text::deunicode` Perl
 // module.
 #[test]
+#[cfg(feature = "alloc")]
 fn test_conversion() {
     assert_eq!(deunicode("Æneid"), "AEneid");
     assert_eq!(deunicode("étude"), "etude");
@@ -52,6 +53,7 @@ fn test_conversion() {
 }
 
 #[test]
+#[cfg(feature = "alloc")]
 fn test_issue_7() {
     assert_eq!(deunicode("技术").to_lowercase(), "ji shu");
     assert_eq!(deunicode("评价").to_lowercase(), "ping jia");

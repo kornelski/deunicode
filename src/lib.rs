@@ -7,7 +7,8 @@
 //!
 //! Examples
 //! --------
-//! ```rust
+#![cfg_attr(feature = "alloc", doc = "```rust")]
+#![cfg_attr(not(feature = "alloc"), doc = "```rust,ignore")]
 //! extern crate deunicode;
 //! use deunicode::deunicode;
 //!
@@ -18,12 +19,15 @@
 //! assert_eq!(deunicode("げんまい茶"), "genmaiCha");
 //! assert_eq!(deunicode("🦄☣"), "unicorn biohazard");
 //! assert_eq!(deunicode("…"), "...");
-//! ```
+#![doc = "```"] // to mollify some syntax highlighters
 
 #![no_std]
 
+#[cfg(any(test, feature = "alloc"))]
 extern crate alloc;
+#[cfg(feature = "alloc")]
 use alloc::borrow::Cow;
+#[cfg(feature = "alloc")]
 use alloc::string::String;
 
 use core::iter::FusedIterator;
@@ -66,6 +70,7 @@ const POINTERS: &[u8] = include_bytes!("pointers.bin");
 ///     example, 北 is transliterated as "Bei ".
 ///   * Han characters are mapped to Mandarin, and will be mostly illegible to Japanese readers.
 #[inline(always)]
+#[cfg(feature = "alloc")]
 pub fn deunicode(s: &str) -> String {
     deunicode_with_tofu(s, "[?]")
 }
@@ -77,6 +82,7 @@ pub fn deunicode(s: &str) -> String {
 /// "Tofu" is a nickname for a replacement character, which in Unicode fonts usually
 /// looks like a block of tofu.
 #[inline]
+#[cfg(feature = "alloc")]
 pub fn deunicode_with_tofu(s: &str, custom_placeholder: &str) -> String {
     deunicode_with_tofu_cow(s, custom_placeholder).into_owned()
 }
@@ -87,6 +93,7 @@ pub fn deunicode_with_tofu(s: &str, custom_placeholder: &str) -> String {
 ///
 /// "Tofu" is a nickname for a replacement character, which in Unicode fonts usually
 /// looks like a block of tofu.
+#[cfg(feature = "alloc")]
 pub fn deunicode_with_tofu_cow<'input>(s: &'input str, custom_placeholder: &str) -> Cow<'input, str> {
     // Fast path to skip over ASCII chars at the beginning of the string
     let ascii_len = s.as_bytes().iter().take_while(|&&c| c < 0x7F).count();
@@ -161,9 +168,11 @@ pub trait AsciiChars {
     ///
     /// Characters are converted to closest ASCII equivalent.
     /// Characters that can't be converted are replaced with `"[?]"`.
+    #[cfg(feature = "alloc")]
     fn to_ascii_lossy(&self) -> String;
 }
 
+#[cfg(feature = "alloc")]
 impl AsciiChars for String {
     #[inline(always)]
     fn ascii_chars(&self) -> AsciiCharsIter<'_> {
@@ -181,6 +190,7 @@ impl AsciiChars for str {
         AsciiCharsIter::new(self)
     }
     #[inline(always)]
+    #[cfg(feature = "alloc")]
     fn to_ascii_lossy(&self) -> String {
         deunicode(self)
     }

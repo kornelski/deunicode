@@ -20,6 +20,10 @@ keywords = [
 ]
 license = "BSD-3-Clause"
 
+[features]
+default = ["alloc"]
+alloc = []
+
 [badges]
 travis-ci = { repository = "kornelski/deunicode" }
 
