@@ -49,6 +49,7 @@ Unicode data
 ------------
  * [`Text::Unidecode`](http://search.cpan.org/~sburke/Text-Unidecode-1.30/lib/Text/Unidecode.pm) by Sean M. Burke
  * [Unicodey](https://unicodey.com) by Cal Henderson
+ * [gh emoji](https://lib.rs/gh-emoji)
  * [any_ascii](https://anyascii.com/)
 
 For a detailed explanation on the rationale behind the original

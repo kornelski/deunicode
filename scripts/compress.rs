@@ -82,17 +82,43 @@ fn main() {
         if ch != "[?] " && ch != "[?]" {ch} else {UNKNOWN_CHAR}
     }).collect();
 
+    if all_codepoints.len() < 140000 { all_codepoints.resize(140000, UNKNOWN_CHAR); }
+
     all_codepoints['术' as usize] = "Shu ";
     all_codepoints['价' as usize] = "Jia ";
     all_codepoints['旅' as usize] = "Lv ";
     all_codepoints['什' as usize] = "Shen ";
     all_codepoints['么' as usize] = "Me ";
+    all_codepoints['❗' as usize] = "!";
+    all_codepoints['❕' as usize] = "!";
+    all_codepoints['❓' as usize] = "?";
+    all_codepoints['❔' as usize] = "?";
+    all_codepoints['➕' as usize] = "+";
+    all_codepoints['➖' as usize] = "-";
+    all_codepoints['➗' as usize] = "/";
+    all_codepoints['🟰' as usize] = "=";
+    all_codepoints['💲' as usize] = "$";
+    all_codepoints['💵' as usize] = "$";
+    all_codepoints['🌟' as usize] = "*";
+    all_codepoints['⭐' as usize] = "*";
 
     for &(ch, ref name) in gemoji.iter().chain(emoji1.iter()).chain(emoji2.iter()) {
-        while all_codepoints.len() <= ch {
-            all_codepoints.push(UNKNOWN_CHAR);
+        if all_codepoints.len() <= ch {
+            all_codepoints.resize(ch as usize+1, UNKNOWN_CHAR);
         }
         if "" == all_codepoints[ch] || "[?]" == all_codepoints[ch] || UNKNOWN_CHAR == all_codepoints[ch] || name.len() < all_codepoints[ch].len() {
+            all_codepoints[ch] = name;
+        }
+    }
+
+    for (mut name, ch) in emojis::iter().filter(|e| e.as_str().chars().count() == 1)
+        .filter_map(|e| Some((e.shortcode().unwrap_or(e.name()), e.as_str().chars().next()? as usize))) {
+        if all_codepoints.len() <= ch {
+            all_codepoints.resize(ch as usize+1, UNKNOWN_CHAR);
+        }
+        if "" == all_codepoints[ch] || "[?]" == all_codepoints[ch] || UNKNOWN_CHAR == all_codepoints[ch] {
+            let new_name = format!("{} ", name.trim().replace('_', " ")).into_boxed_str();
+            name = Box::leak(new_name);
             all_codepoints[ch] = name;
         }
     }
