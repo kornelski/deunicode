@@ -8,7 +8,7 @@ categories = ["text-processing", "internationalization"]
 homepage = "https://lib.rs/crates/deunicode"
 repository = "https://github.com/kornelski/deunicode/"
 readme = "README.md"
-include = ["src/*", "Cargo.toml", "README.md"]
+include = ["src/*", "Cargo.toml", "README.md", "LICENSE"]
 edition = "2021"
 
 keywords = [
