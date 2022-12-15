@@ -123,24 +123,33 @@ fn main() {
         }
     }
 
-    for (i, ch) in all_codepoints.iter_mut().enumerate().skip(255) {
-        if *ch == UNKNOWN_CHAR {
-            let any = std::char::from_u32(i as u32)
-                    .map(any_ascii::any_ascii_char)
-                    .unwrap_or("")
-                    .trim_matches(':');
+    for i in 255..all_codepoints.len() {
+        let Some(codepoint) = std::char::from_u32(i as u32) else { continue; };
+        let ch = all_codepoints[i];
+        if ch == UNKNOWN_CHAR {
+            let any = any_ascii::any_ascii_char(codepoint).trim_matches(':');
             if any != "" {
                 // we use spaces instead of underscores in emoji
-                *ch = if any.chars().any(|c| c.is_alphabetic()) && any.chars().any(|c| c == '_') {
+                all_codepoints[i] = if any.chars().any(|c| c.is_alphabetic()) && any.chars().any(|c| c == '_') {
                     let ch: String = any.chars().map(|c| if c == '_' {' '} else {c}).collect();
                     Box::leak(ch.into_boxed_str())
                 } else {
                     any
                 };
+            } else {
+                let mut s = String::new();
+                let mut changed = false;
+                unicode_normalization::char::decompose_compatible(codepoint, |denorm| {
+                    if denorm as usize != i { changed = true; }
+                    all_codepoints.get(denorm as usize).map(|c| s.push_str(c));
+                });
+                if changed && !s.trim().is_empty() && s.bytes().all(|c| c < 255) {
+                    all_codepoints[i] = Box::leak(s.into_boxed_str());
+                }
             }
         } else  if ch.starts_with("[d") {
             // clean up [d123]
-            *ch = ch.trim_start_matches('[').trim_end_matches(']');
+            all_codepoints[i] = ch.trim_start_matches('[').trim_end_matches(']');
         };
     }
 
