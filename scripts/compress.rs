@@ -153,6 +153,10 @@ fn main() {
         };
     }
 
+    while all_codepoints.last().copied() == Some(UNKNOWN_CHAR) {
+        all_codepoints.pop();
+    }
+
     println!("Got {} codepoints to {} chars",
         all_codepoints.iter().filter(|&&c| c != "" && c != UNKNOWN_CHAR).count(),
         all_codepoints.iter().filter(|&&c| c != "" && c != UNKNOWN_CHAR).map(|s| s.len()).sum::<usize>(),
