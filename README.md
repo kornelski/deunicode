@@ -3,16 +3,15 @@
 [Documentation](https://docs.rs/deunicode/)
 
 The `deunicode` library transliterates Unicode strings such as "Æneid" into pure
-ASCII ones such as "AEneid."
+ASCII ones such as "AEneid." Includes support for emoji. It's compatible with no-std Rust environments.
 
-It started as a Rust port of [`Text::Unidecode`](http://search.cpan.org/~sburke/Text-Unidecode-1.30/lib/Text/Unidecode.pm) Perl module, and was extended to support emoji.
+This is a maintained alternative to the [unidecode](https://lib.rs/crates/unidecode) crate, which started as a Rust port of [`Text::Unidecode`](http://search.cpan.org/~sburke/Text-Unidecode-1.30/lib/Text/Unidecode.pm) Perl module.
 
-This is a fork of [unidecode](https://crates.rs/crates/unidecode) crate. This fork uses a compact representation of Unicode data to minimize memory overhead and executable size (about 70K codepoints mapped to 240K ASCII characters, using 450KB or memory, 160KB gzipped).
+Deunicode is quite fast, and uses a compact representation of Unicode data to minimize memory overhead and executable size (about 70K codepoints mapped to 240K ASCII characters, using 450KB or memory, 160KB gzipped).
 
 Examples
 --------
 ```rust
-extern crate deunicode;
 use deunicode::deunicode;
 
 assert_eq!(deunicode("Æneid"), "AEneid");
@@ -40,7 +39,7 @@ There are, however, some things you should keep in mind:
     (or a custom placeholder, or `None` if you use a chars iterator).
   * Many Unicode characters transliterate to multi-character strings. For
     example, "北" is transliterated as "Bei".
-  * Transliteration is context-free and not sophisticated enough to produce proper Chinese or Japanese.
+  * The transliteration is context-free, and not sophisticated enough to produce proper Chinese or Japanese.
     Han characters used in multiple languages are mapped to a single Mandarin pronounciation,
     and will be mostly illegible to Japanese readers. Transliteration can't
     handle cases where a single character has multiple possible pronounciations.

@@ -1,6 +1,8 @@
 //! The `deunicode` library transliterates Unicode strings such as "Æneid" into pure
 //! ASCII ones such as "AEneid."
 //!
+//! Supports no-std. Stores Unicode data in a compact format.
+//!
 //! It started as a Rust port of [`Text::Unidecode`](http://search.cpan.org/~sburke/Text-Unidecode-1.30/lib/Text/Unidecode.pm) Perl module, and was extended to support emoji.
 //!
 //! See [README](https://github.com/kornelski/deunicode/blob/master/README.md) for more info.
@@ -9,7 +11,6 @@
 //! --------
 #![cfg_attr(feature = "alloc", doc = "```rust")]
 #![cfg_attr(not(feature = "alloc"), doc = "```rust,ignore")]
-//! extern crate deunicode;
 //! use deunicode::deunicode;
 //!
 //! assert_eq!(deunicode("Æneid"), "AEneid");
@@ -52,7 +53,7 @@ const POINTERS: &[u8] = include_bytes!("pointers.bin");
 ///
 /// Guarantees and Warnings
 /// -----------------------
-/// Here are some guarantees you have when calling `deunicode()`:
+/// Here are some guarantees you have when calling [`deunicode()`]:
 ///   * The `String` returned will be valid ASCII; the decimal representation of
 ///     every `char` in the string will be between 0 and 127, inclusive.
 ///   * Every ASCII character (0x0000 - 0x007F) is mapped to itself.
@@ -65,7 +66,7 @@ const POINTERS: &[u8] = include_bytes!("pointers.bin");
 /// There are, however, some things you should keep in mind:
 ///   * As stated, some transliterations do produce `\n` characters.
 ///   * Some Unicode characters transliterate to an empty string on purpose.
-///   * Some Unicode characters are unknown and transliterate to `"[?]"` (see `deunicode_with_tofu`)
+///   * Some Unicode characters are unknown and transliterate to `"[?]"` (see [`deunicode_with_tofu()`])
 ///   * Many Unicode characters transliterate to multi-character strings. For
 ///     example, 北 is transliterated as "Bei ".
 ///   * Han characters are mapped to Mandarin, and will be mostly illegible to Japanese readers.
@@ -75,7 +76,7 @@ pub fn deunicode(s: &str) -> String {
     deunicode_with_tofu(s, "[?]")
 }
 
-/// Same as `deunicode`, but unknown characters can be replaced with a custom string.
+/// Same as [`deunicode()`], but unknown characters can be replaced with a custom string.
 ///
 /// You can use "\u{FFFD}" to use the usual Unicode Replacement Character.
 ///
@@ -87,7 +88,7 @@ pub fn deunicode_with_tofu(s: &str, custom_placeholder: &str) -> String {
     deunicode_with_tofu_cow(s, custom_placeholder).into_owned()
 }
 
-/// Same as `deunicode_with_tofu`, but avoids allocating a new `String` if not necessary.
+/// Same as [`deunicode_with_tofu()`], but avoids allocating a new `String` if not necessary.
 ///
 /// You can use "\u{FFFD}" to use the usual Unicode Replacement Character.
 ///
@@ -121,12 +122,11 @@ pub fn deunicode_with_tofu_cow<'input>(s: &'input str, custom_placeholder: &str)
 /// This function takes a single Unicode character and returns an ASCII
 /// transliteration.
 ///
-/// The warnings and guarantees of `deunicode()` apply to this function as well.
+/// The warnings and guarantees of [`deunicode()`] apply to this function as well.
 ///
 /// Examples
 /// --------
 /// ```rust
-/// # extern crate deunicode;
 /// # use deunicode::deunicode_char;
 /// assert_eq!(deunicode_char('Æ'), Some("AE"));
 /// assert_eq!(deunicode_char('北'), Some("Bei "));
@@ -196,9 +196,9 @@ impl AsciiChars for str {
     }
 }
 
-/// Iterator that translates Unicode characters to ASCII strings.pub
+/// Iterator that translates Unicode characters to ASCII strings.
 ///
-/// See `AsciiChars` trait's `str.ascii_chars()` method.
+/// See [`AsciiChars`] trait's `str.ascii_chars()` method.
 pub struct AsciiCharsIter<'a> {
     next_char: Option<Option<&'static str>>,
     chars: Chars<'a>,
