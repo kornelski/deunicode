@@ -20,6 +20,10 @@
 //! assert_eq!(deunicode("げんまい茶"), "genmaiCha");
 //! assert_eq!(deunicode("🦄☣"), "unicorn biohazard");
 //! assert_eq!(deunicode("…"), "...");
+//!
+//! // format without a temporary string
+//! use deunicode::AsciiChars;
+//! format!("what's up {}", "🐶".ascii_chars());
 #![doc = "```"] // to mollify some syntax highlighters
 
 #![no_std]
@@ -175,7 +179,15 @@ pub trait AsciiChars {
     ///
     /// Items of this iterator may be `None` for some characters.
     /// Use `.map(|ch| ch.unwrap_or("?"))` to replace invalid characters.
+    ///
+    /// Alternatively, this iterator can be used in formatters:
+    #[cfg_attr(feature = "alloc", doc = "```rust")]
+    #[cfg_attr(not(feature = "alloc"), doc = "```rust,ignore")]
+    /// use deunicode::AsciiChars;
+    /// format!("what's up {}", "🐶".ascii_chars());
+    #[doc = "```"]
     fn ascii_chars(&self) -> AsciiCharsIter<'_>;
+
     /// Convert any Unicode string to ASCII-only string.
     ///
     /// Characters are converted to closest ASCII equivalent.
@@ -211,11 +223,21 @@ impl AsciiChars for str {
 /// Iterator that translates Unicode characters to ASCII strings.
 ///
 /// See [`AsciiChars`] trait's `str.ascii_chars()` method.
+///
+/// Additionally, it implements `Display` for formatting strings without allocations.
+///
+#[cfg_attr(feature = "alloc", doc = "```rust")]
+#[cfg_attr(not(feature = "alloc"), doc = "```rust,ignore")]
+/// use deunicode::AsciiChars;
+/// format!("what's up {}", "🐶".ascii_chars());
+#[doc = "```"]
+#[derive(Clone)]
 pub struct AsciiCharsIter<'a> {
     next_char: Option<Option<&'static str>>,
     chars: Chars<'a>,
 }
 
+/// Use `.map(|ch| ch.unwrap_or("?"))` to replace invalid characters.
 impl<'a> AsciiCharsIter<'a> {
     #[inline]
     pub fn new(unicode_string: &'a str) -> Self {
@@ -260,6 +282,19 @@ impl<'a> Iterator for AsciiCharsIter<'a> {
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         (self.chars.size_hint().0 + if self.next_char.is_some() {1} else {0}, None)
+    }
+}
+
+/// Format without a temporary string
+///
+#[cfg_attr(feature = "alloc", doc = "```rust")]
+#[cfg_attr(not(feature = "alloc"), doc = "```rust,ignore")]
+/// use deunicode::AsciiChars;
+/// format!("what's up {}", "🐶".ascii_chars());
+#[doc = "```"]
+impl core::fmt::Display for AsciiCharsIter<'_> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        self.clone().try_for_each(|ch| f.write_str(ch.unwrap_or("\u{FFFD}")))
     }
 }
 

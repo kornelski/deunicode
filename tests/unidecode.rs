@@ -41,11 +41,12 @@ fn test_conversion() {
     assert_eq!(deunicode("ܦܛܽܐܺ"), "ptu'i");
     assert_eq!(deunicode("अभिजीत"), "abhijiit");
     assert_eq!(deunicode("অভিজীত"), "abhijiit");
-    assert_eq!(deunicode("അഭിജീത"), "abhijiit");
+    assert_eq!("അഭിജീത".ascii_chars().to_string(), "abhijiit");
     assert_eq!(deunicode("മലയാലമ്"), "mlyaalm");
     assert_eq!(deunicode("げんまい茶"), "genmaiCha");
     assert_eq!(deunicode("🦄☣"), "unicorn biohazard");
     assert_eq!(deunicode("🦄 ☣"), "unicorn biohazard");
+    assert_eq!("🦄 ☣".ascii_chars().to_string(), "unicorn biohazard");
     assert_eq!(deunicode(" spaces "), " spaces ");
     assert_eq!(deunicode("  two  spaces  "), "  two  spaces  ");
     assert_eq!(deunicode(&[std::char::from_u32(849).unwrap()].iter().collect::<String>()), "[?]");
@@ -58,6 +59,7 @@ fn test_issue_7() {
     assert_eq!(deunicode("技术").to_lowercase(), "ji shu");
     assert_eq!(deunicode("评价").to_lowercase(), "ping jia");
     assert_eq!(deunicode("旅游").to_lowercase(), "lv you");
+    assert_eq!("旅游".ascii_chars().to_string().to_lowercase(), "lv you");
 }
 
 #[test]
