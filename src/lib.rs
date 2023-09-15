@@ -72,6 +72,7 @@ const POINTERS: &[u8] = include_bytes!("pointers.bin");
 ///   * Han characters are mapped to Mandarin, and will be mostly illegible to Japanese readers.
 #[inline(always)]
 #[cfg(feature = "alloc")]
+#[must_use]
 pub fn deunicode(s: &str) -> String {
     deunicode_with_tofu(s, "[?]")
 }
@@ -84,6 +85,7 @@ pub fn deunicode(s: &str) -> String {
 /// looks like a block of tofu.
 #[inline]
 #[cfg(feature = "alloc")]
+#[must_use]
 pub fn deunicode_with_tofu(s: &str, custom_placeholder: &str) -> String {
     deunicode_with_tofu_cow(s, custom_placeholder).into_owned()
 }
@@ -95,6 +97,7 @@ pub fn deunicode_with_tofu(s: &str, custom_placeholder: &str) -> String {
 /// "Tofu" is a nickname for a replacement character, which in Unicode fonts usually
 /// looks like a block of tofu.
 #[cfg(feature = "alloc")]
+#[must_use]
 pub fn deunicode_with_tofu_cow<'input>(s: &'input str, custom_placeholder: &str) -> Cow<'input, str> {
     // Fast path to skip over ASCII chars at the beginning of the string
     let ascii_len = s.as_bytes().iter().take_while(|&&c| c < 0x7F).count();
@@ -140,6 +143,7 @@ pub fn deunicode_with_tofu_cow<'input>(s: &'input str, custom_placeholder: &str)
 /// assert_eq!(deunicode_char('北'), Some("Bei "));
 /// ```
 #[inline]
+#[must_use]
 pub fn deunicode_char(ch: char) -> Option<&'static str> {
     // when using the global directly, LLVM fails to remove bounds checks
     let pointers: &'static [Ptr] = unsafe {
@@ -156,7 +160,7 @@ pub fn deunicode_char(ch: char) -> Option<&'static str> {
                 Some(core::str::from_utf8_unchecked(chars))
             }
         } else {
-            let map_pos = (p.chr[0] as u16 | (p.chr[1] as u16) << 8) as usize;
+            let map_pos = (u16::from(p.chr[0]) | u16::from(p.chr[1]) << 8) as usize;
             // unknown characters are intentionally mapped to out of range length
             MAPPING.get(map_pos..map_pos + p.len as usize)
         }
@@ -262,10 +266,10 @@ impl<'a> Iterator for AsciiCharsIter<'a> {
 #[test]
 fn iter_test() {
     use alloc::vec::Vec;
-    let chars: Vec<_> = AsciiCharsIter::new("中国").filter_map(|ch| ch).collect();
+    let chars: Vec<_> = AsciiCharsIter::new("中国").flatten().collect();
     assert_eq!(&chars, &["Zhong ", "Guo"]);
-    let chars: Vec<_> = "中国x".ascii_chars().filter_map(|ch| ch).collect();
+    let chars: Vec<_> = "中国x".ascii_chars().flatten().collect();
     assert_eq!(&chars, &["Zhong ", "Guo ", "x"]);
-    let chars: Vec<_> = "中 国".ascii_chars().filter_map(|ch| ch).collect();
+    let chars: Vec<_> = "中 国".ascii_chars().flatten().collect();
     assert_eq!(&chars, &["Zhong", " ", "Guo"]);
 }
