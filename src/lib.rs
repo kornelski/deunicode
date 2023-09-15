@@ -102,20 +102,28 @@ pub fn deunicode_with_tofu_cow<'input>(s: &'input str, custom_placeholder: &str)
         return Cow::Borrowed(s);
     }
 
+    let (ascii, rest) = s.as_bytes().split_at(ascii_len);
+    // safe, because it's been checked to be ASCII only
+    debug_assert!(core::str::from_utf8(ascii).is_ok());
+    let ascii = unsafe { core::str::from_utf8_unchecked(ascii) };
+
     // reserve a bit more space to avoid reallocations on longer transliterations
     // but instead of `+ 16` uses `| 15` to stay in the smallest allocation bucket for short strings
-    let mut out = String::with_capacity(s.len() | 15);
+    let mut out = String::new();
+    // this generates less code than with_capacity()
+    out.try_reserve_exact(s.len() | 15).unwrap_or_else(|_| panic!());
 
-    let (ascii, rest) = s.as_bytes().split_at(ascii_len);
-
-    // safe, because it's been checked to be ASCII only
-    out.push_str(unsafe { core::str::from_utf8_unchecked(ascii) });
+    // this if optimizes out unused realloc code from push_str
+    let needs_to_grow = ascii.as_bytes().len() > out.capacity().wrapping_sub(out.len());
+    if !needs_to_grow {
+        out.push_str(ascii);
+    }
 
     // safe, because UTF-8 codepoint can't start with < 7F byte
     debug_assert!(core::str::from_utf8(rest).is_ok());
     let s = unsafe { core::str::from_utf8_unchecked(rest) };
 
-    out.extend(s.ascii_chars().map(|ch| ch.unwrap_or(custom_placeholder)));
+    out.extend(s.ascii_chars().map(move |ch| ch.unwrap_or(custom_placeholder)));
     Cow::Owned(out)
 }
 
@@ -141,7 +149,7 @@ pub fn deunicode_char(ch: char) -> Option<&'static str> {
     if let Some(p) = pointers.get(ch as usize) {
         // if length is 1 or 2, then the "pointer" data is used to store the char
         if p.len <= 2 {
-            let chars = &p.chr[..p.len as usize];
+            let chars = p.chr.get(..p.len as usize)?;
             // safe, because we're returning only ASCII
             debug_assert!(core::str::from_utf8(chars).is_ok());
             unsafe {
@@ -222,23 +230,21 @@ impl<'a> Iterator for AsciiCharsIter<'a> {
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        self.next_char.map(|dch| {
-            self.next_char = self.chars.next().map(deunicode_char);
-            dch.map(|dch| {
-                let bytes = dch.as_bytes();
-                let ends_with_space = bytes.len() > 1 && bytes.last().cloned() == Some(b' ');
-                if !ends_with_space {
-                    return dch;
-                }
-                let space_or_end_next = self.next_char.map_or(true, |ch| { // true if end
-                    ch.map_or(false, |ch| ch.as_bytes().get(0).cloned() == Some(b' ')) // space next (assume placeholder is not space)
-                });
-                if !space_or_end_next {
-                    dch
-                } else {
-                    &dch[..dch.len()-1]
-                }
-            })
+        let dch = self.next_char?;
+        self.next_char = self.chars.next().map(deunicode_char);
+        let dch = match dch {
+            None => return Some(None),
+            Some(dch) => dch,
+        };
+        // ends with space
+        let trim_last_char = dch.as_bytes().len() > 1 && dch.as_bytes().last().copied() == Some(b' ') &&
+            self.next_char.map_or(true, |ch| { // true if end
+            ch.map_or(false, |ch| ch.as_bytes().first().copied() == Some(b' ')) // space next (assume placeholder is not space)
+        });
+        Some(if !trim_last_char {
+            Some(dch)
+        } else {
+            dch.get(..dch.len()-1)
         })
     }
 
