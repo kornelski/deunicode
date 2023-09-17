@@ -49,8 +49,9 @@ struct Ptr {
     len: u8,
 }
 
+const POINTERS_BYTES: &[u8] = include_bytes!("pointers.bin");
 /// POINTERS format is described by struct Ptr
-const POINTERS: &[u8] = include_bytes!("pointers.bin");
+const POINTERS: &[Ptr] = unsafe { core::slice::from_raw_parts(POINTERS_BYTES.as_ptr().cast(), POINTERS_BYTES.len() / core::mem::size_of::<Ptr>()) };
 
 /// This function takes any Unicode string and returns an ASCII transliteration
 /// of that string.
@@ -149,12 +150,7 @@ pub fn deunicode_with_tofu_cow<'input>(s: &'input str, custom_placeholder: &str)
 #[inline]
 #[must_use]
 pub fn deunicode_char(ch: char) -> Option<&'static str> {
-    // when using the global directly, LLVM fails to remove bounds checks
-    let pointers: &'static [Ptr] = unsafe {
-        core::slice::from_raw_parts(POINTERS.as_ptr().cast::<Ptr>(), POINTERS.len()/core::mem::size_of::<Ptr>())
-    };
-
-    if let Some(p) = pointers.get(ch as usize) {
+    if let Some(p) = POINTERS.get(ch as usize) {
         // if length is 1 or 2, then the "pointer" data is used to store the char
         if p.len <= 2 {
             let chars = p.chr.get(..p.len as usize)?;
