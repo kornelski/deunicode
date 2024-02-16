@@ -97,10 +97,19 @@ fn main() {
     all_codepoints['➖' as usize] = "-";
     all_codepoints['➗' as usize] = "/";
     all_codepoints['🟰' as usize] = "=";
+    all_codepoints['✖' as usize] = "x";
     all_codepoints['💲' as usize] = "$";
     all_codepoints['💵' as usize] = "$";
     all_codepoints['🌟' as usize] = "*";
+    all_codepoints['★' as usize] = "*";
+    all_codepoints['☀' as usize] = "*";
+    all_codepoints['☹' as usize] = ":(";
+    all_codepoints['☺' as usize] = ":)";
+    all_codepoints['✳' as usize] = "*";
+    all_codepoints['❇' as usize] = "*";
+    all_codepoints['✴' as usize] = "*";
     all_codepoints['⭐' as usize] = "*";
+    all_codepoints['☻' as usize] = ":)";
     all_codepoints['Ä' as usize] = "AE"; // https://github.com/kornelski/deunicode/issues/15
     all_codepoints['ä' as usize] = "ae";
 
@@ -119,8 +128,8 @@ fn main() {
             all_codepoints.resize(ch as usize+1, UNKNOWN_CHAR);
         }
         if "" == all_codepoints[ch] || "[?]" == all_codepoints[ch] || UNKNOWN_CHAR == all_codepoints[ch] {
-            let new_name = format!("{} ", name.trim().replace('_', " ")).into_boxed_str();
-            name = Box::leak(new_name);
+            let new_name = format!("{} ", name.trim().replace('_', " "));
+            name = Box::leak(new_name.into_boxed_str());
             all_codepoints[ch] = name;
         }
     }
@@ -153,6 +162,77 @@ fn main() {
             // clean up [d123]
             all_codepoints[i] = ch.trim_start_matches('[').trim_end_matches(']');
         };
+    }
+
+    let sequences = std::fs::read_to_string("emoji-sequences.txt").unwrap();
+    for line in sequences.lines().map(|l| l.trim()).filter(|l| !l.is_empty() && !l.starts_with('#')) {
+        let (name, rest) = line.split(';').nth(2).unwrap().split_once('#').unwrap();
+        for (n, e) in name.split("..").zip(rest.split("..")) {
+            let e = e.trim_matches(|c: char| (c as u32) < 128);
+            let e = e.chars().filter(|&c| {
+                !matches!(c as u32, 127995..=127999 | 65039)
+            }).collect::<Vec<_>>();
+            if e.len() != 1 {
+                continue;
+            }
+            let ch = e[0] as usize;
+            if ch == 8419 || ch == 917536 {
+                continue;
+            }
+            if all_codepoints.len() <= ch {
+                all_codepoints.resize(ch as usize+1, UNKNOWN_CHAR);
+            }
+            if "" == all_codepoints[ch] || "[?]" == all_codepoints[ch] || UNKNOWN_CHAR == all_codepoints[ch] {
+                let new_name = format!("{} ", n.trim().replace('_', " ")
+                    .trim_end_matches(" face")
+                    .trim_end_matches(" hand")
+                    .trim_end_matches(" sign")
+                    .trim_start_matches("circled ")
+                    .to_lowercase().chars().filter(|c| c.is_ascii_alphanumeric() || c.is_ascii_whitespace()).collect::<String>());
+                all_codepoints[ch] = Box::leak(new_name.into_boxed_str());
+            }
+        }
+    }
+
+    let sequences = std::fs::read_to_string("emoji-data.txt").unwrap();
+    for line in sequences.lines().map(|l| l.trim()).filter(|l| !l.is_empty() && !l.starts_with('#')) {
+        let line2 = line.split_once('#').unwrap().1;
+        let (rest, name) = line2.split_once(')').expect(line2);
+        for (n, e) in name.split("..").zip(rest.split("..")) {
+            if n.contains("reserved") {
+                continue;
+            }
+            let e = e.trim_matches(|c: char| (c as u32) < 128);
+            let e = e.chars().filter(|&c| {
+                !matches!(c as u32, 127995..=127999 | 65039)
+            }).collect::<Vec<_>>();
+            if e.len() != 1 {
+                continue;
+            }
+            let ch = e[0] as usize;
+            if ch == 8205 || ch == 8419 || ch == 917536 || ch == 917631{
+                continue;
+            }
+            if all_codepoints.len() <= ch {
+                all_codepoints.resize(ch as usize+1, UNKNOWN_CHAR);
+            }
+            if "" == all_codepoints[ch] || "[?]" == all_codepoints[ch] || UNKNOWN_CHAR == all_codepoints[ch] {
+                let new_name = format!("{} ", n.trim()
+                    .to_lowercase()
+                    .replace('_', " ")
+                    .trim_start_matches("lower right ")
+                    .trim_start_matches("upper right ")
+                    .trim_start_matches("trigram for ")
+                    .trim_start_matches("reversed ")
+                    .trim_start_matches("rotated ")
+                    .trim_start_matches("heavy ")
+                    .trim_end_matches(" symbol")
+                    .trim_end_matches(" suit")
+                    .trim_end_matches(" bullet")
+                    .chars().filter(|c| c.is_ascii_alphanumeric() || c.is_ascii_whitespace()).collect::<String>());
+                all_codepoints[ch] = Box::leak(new_name.into_boxed_str());
+            }
+        }
     }
 
     while all_codepoints.last().copied() == Some(UNKNOWN_CHAR) {
