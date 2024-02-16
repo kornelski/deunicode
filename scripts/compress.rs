@@ -235,6 +235,11 @@ fn main() {
         }
     }
 
+    // phrases need to end with a space
+    for bad in all_codepoints.iter_mut().filter(|c| c.contains(' ') && c.starts_with(|c: char| c.is_ascii_alphabetic()) && !c.ends_with(' ')) {
+        *bad = Box::leak(format!("{} ", bad).into_boxed_str());
+    }
+
     while all_codepoints.last().copied() == Some(UNKNOWN_CHAR) {
         all_codepoints.pop();
     }
@@ -251,13 +256,14 @@ fn main() {
         .enumerate() {
         popularity.entry(replacement).or_insert((1,n)).0 -= 1;
     }
+
     // and sort them by most popular first
     // most popular first mean small numbers will be most frequently used
     // which is good for compression
     // then by longest first, so that we can reuse common prefixes
     // then roughly group by similarity (original order + alpha)
     let mut by_pop = popularity.iter()
-        .map(|(&rep,&(pop, n))| (pop == 0, !rep.chars().filter(|&c| c == ' ').count(),pop/4,rep.chars().any(|c| c.is_ascii_uppercase()),!rep.len(),n/4, rep))
+        .map(|(&rep,&(pop, n))| (rep.chars().any(|c| c.is_ascii_uppercase() || !c.is_ascii_alphabetic()), !rep.chars().any(|c| c == ' '),  pop == 0,pop/4,rep.chars().any(|c| c.is_ascii_uppercase()),!rep.len(),n/4, rep))
         .collect::<Vec<_>>();
     by_pop.sort();
 
@@ -271,7 +277,11 @@ fn main() {
             while r.len() > 2 {
                 let mut p = r;
                 while p.len() > 2 {
-                    longer.insert(p, replacement);
+                    longer.entry(p).and_modify(|old| {
+                        if old.len() < replacement.len() {
+                            *old = replacement;
+                        }
+                    }).or_insert(replacement);
                     p = &p[1..];
                 }
                 r = &r[0..r.len()-1];
@@ -279,11 +289,29 @@ fn main() {
         }
     }
 
+    // make first word overlap with the last word
+    let mut by_pop = by_pop.into_iter().enumerate().map(|(i, (..,w))| {
+        (i*2, longer.get(w).copied().unwrap_or(w))
+    }).collect::<Vec<_>>();
+
+    let mut last_word = by_pop.iter().rev()
+        .filter_map(|&(i, replacement)| {
+        Some((replacement.trim().rsplit_once(' ')?.1, (i, replacement)))
+    }).collect::<HashMap<_,_>>();
+
+    for (i, replacement) in by_pop.iter_mut() {
+        let Some((first_word, _)) = replacement.trim().split_once(' ') else { continue; };
+        if let Some((matched, _)) = last_word.remove(first_word) {
+            *i = matched+1; // makes them adjacent in the next loop
+        }
+    }
+    by_pop.sort_by_key(|a| a.0);
+
     // store each longest replacement, saving its position
     let mut mapping = String::with_capacity(60_000);
     let mut index = HashMap::<&str, usize>::new();
-    'words: for (..,replacement) in by_pop {
-        let replacement = *longer.get(replacement).expect("known prefix");
+    'words: for (_, replacement) in by_pop {
+        let replacement = longer.get(replacement).copied().expect("known prefix");
         if index.get(replacement).is_none() {
             // there's a chance two adjacent replacements form a third
             // so "ab", "cd" is useful for "bc"
