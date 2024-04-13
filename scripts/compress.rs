@@ -110,8 +110,6 @@ fn main() {
     all_codepoints['✴' as usize] = "*";
     all_codepoints['⭐' as usize] = "*";
     all_codepoints['☻' as usize] = ":)";
-    all_codepoints['Ä' as usize] = "AE"; // https://github.com/kornelski/deunicode/issues/15
-    all_codepoints['ä' as usize] = "ae";
 
     for &(ch, ref name) in gemoji.iter().chain(emoji1.iter()).chain(emoji2.iter()) {
         if all_codepoints.len() <= ch {
