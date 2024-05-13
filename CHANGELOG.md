@@ -1,5 +1,55 @@
 # Changelog
 
+## 1.6.0 (2024-05-13)
+
+- Uniform handling of control characters
+- Remove poor any_ascii transliterations
+- Don't spell out skin tone modifiers
+
+## 1.4.4 (2024-04-13)
+
+- Revert "Change mapping of Ä"
+
+## 1.4.3 (2024-02-16)
+
+- Slightly improved compression
+- New emoji
+
+## 1.4.2 (2023-12-10)
+
+- Change mapping of Ä
+
+## 1.4.0 (2023-09-15)
+
+- Make the iter implement Display
+
+## 1.3.3 (2022-12-15)
+
+- Add fallback from unicode decomposition
+
+## 1.3.2 (2022-08-21)
+
+- More emoji
+- Support no_std
+
+## 1.3.0 (2021-05-07)
+
+- Fall back to any_ascii
+
+## 1.2.0 (2021-03-24)
+
+- Fast path for ASCII-only strings
+- Update gemoji
+
+## 1.1.1 (2020-04-23)
+
+- Fixed shifted/cropped replacements
+
+## 1.1.0 (2020-02-24)
+
+- Update emoji database
+- Edition 2018
+
 ## 1.0.0 (2018-12-22)
 
 - Added more emoji
