@@ -34,6 +34,9 @@ struct Emoji2 {
 }
 
 fn emojiname(s: &str) -> String {
+    if s.starts_with("skin-") { // skip skin tones
+        return String::new();
+    }
     let mut s = s.replace('_'," ");
     s.push(' ');
     s
@@ -181,7 +184,7 @@ fn main() {
                 all_codepoints.resize(ch as usize+1, UNKNOWN_CHAR);
             }
             if "" == all_codepoints[ch] || "[?]" == all_codepoints[ch] || UNKNOWN_CHAR == all_codepoints[ch] {
-                let new_name = format!("{} ", n.trim().replace('_', " ")
+                let new_name = emojiname(&n.trim().replace('_', " ")
                     .trim_end_matches(" face")
                     .trim_end_matches(" hand")
                     .trim_end_matches(" sign")
