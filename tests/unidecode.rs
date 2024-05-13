@@ -49,8 +49,8 @@ fn test_conversion() {
     assert_eq!("🦄 ☣".ascii_chars().to_string(), "unicorn biohazard");
     assert_eq!(deunicode(" spaces "), " spaces ");
     assert_eq!(deunicode("  two  spaces  "), "  two  spaces  ");
-    assert_eq!(deunicode(&[std::char::from_u32(849).unwrap()].iter().collect::<String>()), "[?]");
-    assert_eq!(deunicode_with_tofu(&[std::char::from_u32(849).unwrap()].iter().collect::<String>(), "tofu"), "tofu");
+    assert_eq!(deunicode(&[std::char::from_u32(61849).unwrap()].iter().collect::<String>()), "[?]");
+    assert_eq!(deunicode_with_tofu(&[std::char::from_u32(61849).unwrap()].iter().collect::<String>(), "tofu"), "tofu");
 }
 
 #[test]
@@ -68,7 +68,6 @@ fn test_deunicode_char() {
     assert_eq!(deunicode_char('北'), Some("Bei "));
     assert_eq!(deunicode_char('亰'), Some("Jing "));
     assert_eq!(deunicode_char('ᔕ'), Some("sha"));
-    assert_eq!(deunicode_char(std::char::from_u32(849).unwrap()), None);
 
     assert_eq!(deunicode_char(std::char::from_u32(0x1FFFF).unwrap()), None);
     assert_eq!(deunicode_char(std::char::from_u32(0x2FFFF).unwrap()), None);

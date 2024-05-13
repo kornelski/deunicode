@@ -243,6 +243,38 @@ fn main() {
         }
     }
 
+    for (ch, replacement) in all_codepoints.iter_mut().enumerate() {
+        let Ok(ch) = (ch as u32).try_into() else {
+            continue;
+        };
+        let cat = GeneralCategory::of(ch);
+        use GeneralCategory::*;
+        if cat == Control {
+            *replacement = "";
+        }
+
+        if *replacement == UNKNOWN_CHAR {
+            match cat {
+                SpacingMark | SpaceSeparator => {
+                    *replacement = " ";
+                },
+                FinalPunctuation => {
+                    *replacement = ".";
+                },
+                OtherPunctuation => {
+                    *replacement = "_";
+                },
+                DashPunctuation => {
+                    *replacement = "-";
+                },
+                NonspacingMark | EnclosingMark | ModifierSymbol | Format | Surrogate => {
+                    *replacement = "";
+                },
+                _ => {},
+            }
+        }
+    }
+
     // phrases need to end with a space
     for bad in all_codepoints.iter_mut().filter(|c| c.contains(' ') && c.starts_with(|c: char| c.is_ascii_alphabetic()) && !c.ends_with(' ')) {
         *bad = Box::leak(format!("{} ", bad).into_boxed_str());
