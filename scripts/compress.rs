@@ -4,6 +4,7 @@
 #[macro_use] extern crate serde_derive;
 
 mod data;
+use unic_ucd_category::GeneralCategory;
 use crate::data::MAPPING;
 use std::collections::HashMap;
 
@@ -139,7 +140,13 @@ fn main() {
         let Some(codepoint) = std::char::from_u32(i as u32) else { continue; };
         let ch = all_codepoints[i];
         if ch == UNKNOWN_CHAR {
-            let any = any_ascii::any_ascii_char(codepoint).trim_matches(':');
+            let mut any = any_ascii::any_ascii_char(codepoint).trim_matches(':');
+            if GeneralCategory::of(codepoint) == GeneralCategory::OtherLetter {
+                if any.as_bytes().iter().any(|b| b.is_ascii_digit()) {
+                    // hieroglyphs are just "A123"
+                    any = "";
+                }
+            }
             if any != "" {
                 // we use spaces instead of underscores in emoji
                 all_codepoints[i] = if any.chars().any(|c| c.is_alphabetic()) && any.chars().any(|c| c == '_') {
