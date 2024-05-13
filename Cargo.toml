@@ -1,6 +1,6 @@
 [package]
 name = "deunicode"
-version = "1.4.4"
+version = "1.5.0"
 authors = ["Kornel Lesinski <kornel@geekhood.net>", "Amit Chowdhury <amitc97@gmail.com>"]
 description = "Convert Unicode strings to pure ASCII by intelligently transliterating them. Suppors Emoji and Chinese."
 documentation = "https://docs.rs/deunicode"
