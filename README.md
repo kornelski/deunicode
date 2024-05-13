@@ -5,7 +5,7 @@
 The `deunicode` library transliterates Unicode strings such as "Æneid" into pure
 ASCII ones such as "AEneid". It includes support for emoji. It's compatible with no-std Rust environments.
 
-Deunicode is quite fast, supports on-the-fly conversion without allocations. It has a compact representation of Unicode data to minimize memory overhead and executable size (about 70K codepoints mapped to 240K ASCII characters, using 450KB of memory, 160KB gzipped).
+Deunicode is quite fast, supports on-the-fly conversion without allocations. It has a compact representation of Unicode data to minimize memory overhead and executable size (about 75K codepoints mapped to 245K ASCII characters, using 450KB of memory, 160KB gzipped).
 
 ## Examples
 
