@@ -5,6 +5,7 @@
 
 mod data;
 use unic_ucd_category::GeneralCategory;
+use unic_ucd_block::Block;
 use crate::data::MAPPING;
 use std::collections::HashMap;
 
@@ -139,7 +140,7 @@ fn main() {
     for i in 255..all_codepoints.len() {
         let Some(codepoint) = std::char::from_u32(i as u32) else { continue; };
         let ch = all_codepoints[i];
-        if ch == UNKNOWN_CHAR {
+        if ch == UNKNOWN_CHAR || ch == "" {
             let mut any = any_ascii::any_ascii_char(codepoint).trim_matches(':');
             if GeneralCategory::of(codepoint) == GeneralCategory::OtherLetter {
                 if any.as_bytes().iter().any(|b| b.is_ascii_digit()) {
@@ -242,6 +243,28 @@ fn main() {
             }
         }
     }
+
+    // https://www.unicode.org/Public/security/revision-03/confusables.txt
+    let confusables = std::fs::read_to_string("confusables.txt").unwrap();
+    for line in confusables.lines() {
+        let line = line.trim_ascii_start();
+        if line.is_empty() || line.starts_with('#') || line.starts_with('\u{feff}') {
+            continue;
+        }
+        let mut c = line.split(';');
+        let from: u32 = u32::from_str_radix(c.next().expect(line).trim_ascii(), 16).expect(line);
+        if all_codepoints.get(from as usize).copied().is_some_and(|c| c != UNKNOWN_CHAR && c != "") {
+            continue;
+        }
+        let from_ch = char::from_u32(from).unwrap();
+        if Block::of(from_ch).is_some_and(|b| b.name == "CJK Compatibility Ideographs Supplement" || b.name == "Arabic") {
+            continue;
+        }
+        let to: String = c.next().expect(line).trim().split(' ').filter(|c| !c.is_empty()).map(|c| char::from_u32(u32::from_str_radix(c, 16).unwrap()).unwrap()).collect();
+        let to_ascii: String = any_ascii::any_ascii(&to);
+        all_codepoints[from as usize] = Box::leak(to_ascii.into_boxed_str());
+    }
+
 
     for (ch, replacement) in all_codepoints.iter_mut().enumerate() {
         let Ok(ch) = (ch as u32).try_into() else {
