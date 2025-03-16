@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.1 (2025-03-16)
+
+- Added Unicode Confusables as a fallback mapping
+
 ## 1.6.0 (2024-05-13)
 
 - Uniform handling of control characters
