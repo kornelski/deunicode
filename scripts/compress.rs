@@ -115,6 +115,7 @@ fn main() {
     all_codepoints['✴' as usize] = "*";
     all_codepoints['⭐' as usize] = "*";
     all_codepoints['☻' as usize] = ":)";
+    all_codepoints['✓' as usize] = "OK";
 
     for &(ch, ref name) in gemoji.iter().chain(emoji1.iter()).chain(emoji2.iter()) {
         if all_codepoints.len() <= ch {
@@ -281,8 +282,17 @@ fn main() {
                 SpacingMark | SpaceSeparator => {
                     *replacement = " ";
                 },
-                FinalPunctuation => {
-                    *replacement = ".";
+                ParagraphSeparator => {
+                    *replacement = "\n\n";
+                },
+                ClosePunctuation => {
+                    *replacement = ")";
+                },
+                OpenPunctuation => {
+                    *replacement = "(";
+                },
+                InitialPunctuation | FinalPunctuation => {
+                    *replacement = "'";
                 },
                 OtherPunctuation => {
                     *replacement = "_";

@@ -29,6 +29,7 @@ fn test_every_char_is_ascii2() {
 #[test]
 #[cfg(feature = "alloc")]
 fn test_conversion() {
+    assert_eq!(deunicode("✓"), "OK");
     assert_eq!(deunicode("Æneid"), "AEneid");
     assert_eq!(deunicode("étude"), "etude");
     assert_eq!(deunicode("北亰"), "Bei Jing");
@@ -51,6 +52,7 @@ fn test_conversion() {
     assert_eq!(deunicode("  two  spaces  "), "  two  spaces  ");
     assert_eq!(deunicode(&[std::char::from_u32(61849).unwrap()].iter().collect::<String>()), "[?]");
     assert_eq!(deunicode_with_tofu(&[std::char::from_u32(61849).unwrap()].iter().collect::<String>(), "tofu"), "tofu");
+    assert_eq!(deunicode_with_tofu_cow("\u{2713} [x]", "?"), "OK [x]");
 }
 
 #[test]
