@@ -414,7 +414,14 @@ fn main() {
     // each is position (2 bytes) + length (1 byte)
     let mut pointers = Vec::with_capacity(all_codepoints.len());
     assert!(mapping.len() < u32::max_value() as usize);
-    for &replacement in all_codepoints.iter() {
+    for (ch, &replacement) in all_codepoints.iter().enumerate() {
+        if let Some(ch) = char::from_u32(ch as u32) {
+            let old = deunicode::deunicode_char(ch).unwrap_or(UNKNOWN_CHAR);
+            if old != replacement {
+                eprintln!("all_codepoints['{ch}' as usize] = {replacement:?}; // previously (U+{:04X}) {old:?}", ch as u32);
+            }
+        }
+
         let pos = match replacement.len() {
             _ if replacement == UNKNOWN_CHAR => {
                 0xFFFF // intentionally invalid len will be caught later

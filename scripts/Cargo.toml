@@ -17,3 +17,4 @@ emojis = "0.6.4"
 unicode-normalization = "0.1.24"
 unic-ucd-category = "0.9.0"
 unic-ucd-block = "0.9.0"
+deunicode = { path = ".."}
