@@ -122,19 +122,21 @@ fn main() {
             all_codepoints.resize(ch as usize+1, UNKNOWN_CHAR);
         }
         if "" == all_codepoints[ch] || "[?]" == all_codepoints[ch] || UNKNOWN_CHAR == all_codepoints[ch] || name.len() < all_codepoints[ch].len() {
+            assert!(!name.ends_with('2'));
+            looks_valid(ch, name);
             all_codepoints[ch] = name;
         }
     }
 
-    for (mut name, ch) in emojis::iter().filter(|e| e.as_str().chars().count() == 1)
+    for (name, ch) in emojis::iter().filter(|e| e.as_str().chars().count() == 1)
         .filter_map(|e| Some((e.shortcode().unwrap_or(e.name()), e.as_str().chars().next()? as usize))) {
         if all_codepoints.len() <= ch {
             all_codepoints.resize(ch as usize+1, UNKNOWN_CHAR);
         }
         if "" == all_codepoints[ch] || "[?]" == all_codepoints[ch] || UNKNOWN_CHAR == all_codepoints[ch] {
             let new_name = format!("{} ", name.trim().replace('_', " "));
-            name = Box::leak(new_name.into_boxed_str());
-            all_codepoints[ch] = name;
+            assert!(!new_name.ends_with('2'));
+            all_codepoints[ch] = into_replacement(ch, new_name);
         }
     }
 
@@ -153,8 +155,9 @@ fn main() {
                 // we use spaces instead of underscores in emoji
                 all_codepoints[i] = if any.chars().any(|c| c.is_alphabetic()) && any.chars().any(|c| c == '_') {
                     let ch: String = any.chars().map(|c| if c == '_' {' '} else {c}).collect();
-                    Box::leak(ch.into_boxed_str())
+                    into_replacement(i, ch)
                 } else {
+                    looks_valid(i, any);
                     any
                 };
             } else {
@@ -164,8 +167,8 @@ fn main() {
                     if denorm as usize != i { changed = true; }
                     all_codepoints.get(denorm as usize).map(|c| s.push_str(c));
                 });
-                if changed && !s.trim().is_empty() && s.bytes().all(|c| c < 255) {
-                    all_codepoints[i] = Box::leak(s.into_boxed_str());
+                if changed && !s.trim().is_empty() && s.bytes().all(|c| c < 255 && c > 0) {
+                    all_codepoints[i] = into_replacement(i, s);
                 }
             }
         } else  if ch.starts_with("[d") {
@@ -199,7 +202,8 @@ fn main() {
                     .trim_end_matches(" sign")
                     .trim_start_matches("circled ")
                     .to_lowercase().chars().filter(|c| c.is_ascii_alphanumeric() || c.is_ascii_whitespace()).collect::<String>());
-                all_codepoints[ch] = Box::leak(new_name.into_boxed_str());
+                assert!(!new_name.ends_with('2'));
+                all_codepoints[ch] = into_replacement(ch, new_name);
             }
         }
     }
@@ -240,7 +244,8 @@ fn main() {
                     .trim_end_matches(" suit")
                     .trim_end_matches(" bullet")
                     .chars().filter(|c| c.is_ascii_alphanumeric() || c.is_ascii_whitespace()).collect::<String>());
-                all_codepoints[ch] = Box::leak(new_name.into_boxed_str());
+                assert!(!new_name.ends_with('2'));
+                all_codepoints[ch] = into_replacement(ch, new_name);
             }
         }
     }
@@ -263,7 +268,8 @@ fn main() {
         }
         let to: String = c.next().expect(line).trim().split(' ').filter(|c| !c.is_empty()).map(|c| char::from_u32(u32::from_str_radix(c, 16).unwrap()).unwrap()).collect();
         let to_ascii: String = any_ascii::any_ascii(&to);
-        all_codepoints[from as usize] = Box::leak(to_ascii.into_boxed_str());
+        assert!(!to_ascii.ends_with('2'));
+        all_codepoints[from as usize] = into_replacement(from as usize, to_ascii);
     }
 
 
@@ -442,4 +448,16 @@ fn main() {
     f.write_all(&pointers).unwrap();
     let mut f = File::create("../src/mapping.txt").unwrap();
     f.write_all(mapping.as_bytes()).unwrap();
+}
+
+#[track_caller]
+fn looks_valid(ch: usize, txt: &str) {
+    assert!(txt.len() <= 4 || !txt.ends_with('2'));
+    assert!(!txt.to_ascii_lowercase().contains(&format!("{ch:04x}")), "{txt:?}");
+}
+
+fn into_replacement(ch: usize, txt: String) -> &'static str {
+    looks_valid(ch, &txt);
+    assert!(txt.len() < 30 && txt.bytes().all(|b| b > 0), "{txt:?}");
+    Box::leak(txt.into_boxed_str())
 }
