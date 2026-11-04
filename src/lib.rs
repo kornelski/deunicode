@@ -259,10 +259,18 @@ impl<'a> Iterator for AsciiCharsIter<'a> {
             Some(dch) => dch,
         };
         // ends with space
-        let trim_last_char = dch.as_bytes().len() > 1 && dch.as_bytes().last().copied() == Some(b' ') &&
-            self.next_char.map_or(true, |ch| { // true if end
-            ch.map_or(false, |ch| ch.as_bytes().first().copied() == Some(b' ')) // space next (assume placeholder is not space)
-        });
+        let trim_last_char = if dch.as_bytes().len() > 1 && dch.as_bytes().last().copied() == Some(b' ') {
+            let mut next_char = self.next_char;
+            let mut chars = self.chars.clone();
+            while next_char == Some(Some("")) {
+                next_char = chars.next().map(deunicode_char);
+            }
+            next_char.map_or(true, |ch| { // true if end
+                ch.map_or(false, |ch| ch.as_bytes().first().copied() == Some(b' ')) // space next (assume placeholder is not space)
+            })
+        } else {
+            false
+        };
         Some(if !trim_last_char {
             Some(dch)
         } else {
